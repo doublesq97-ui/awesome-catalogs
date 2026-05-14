@@ -92,5 +92,18 @@ def append_or_replace(path: Path, entry: str, name: str) -> None:
     path.write_text("\n".join(new_lines).rstrip() + "\n", encoding="utf-8")
 
 
+def find_duplicate_source(source: str, root: Path = CATALOG_ROOT) -> str | None:
+    search = source.strip().lower()
+    for path in [root / "CATALOG.md", *[root / name for name in CATEGORY_CATALOGS.values()]]:
+        if not path.exists():
+            continue
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if search in line.lower() and line.startswith("|") and "---" not in line:
+                parts = [p.strip() for p in line.split("|")]
+                if len(parts) >= 4:
+                    return parts[2]
+    return None
+
+
 def escape(value: str) -> str:
     return value.replace("|", "\\|").replace("\n", " ").strip()

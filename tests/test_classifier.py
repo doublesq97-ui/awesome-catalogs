@@ -4,6 +4,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import tempfile
+from pathlib import Path
+
+from awesome_catalogs.catalog import find_duplicate_source, update_catalog
 from awesome_catalogs.classifier import classify_repo, extract_summary, safe_name
 
 
@@ -43,6 +47,36 @@ class ClassifierTests(unittest.TestCase):
     def test_extract_summary_cleans_markdown_quote(self) -> None:
         readme = "# Demo\n\n> Paste a GitHub link — auto-classify."
         self.assertEqual(extract_summary(readme, fallback="none"), "Paste a GitHub link — auto-classify.")
+
+
+class CatalogTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temp = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp.name)
+
+    def tearDown(self) -> None:
+        self.temp.cleanup()
+
+    def test_find_duplicate_source_returns_name(self) -> None:
+        from awesome_catalogs.models import RepoInfo
+
+        info = RepoInfo(
+            name="test-tool",
+            source="https://github.com/owner/test-tool",
+            path=Path("."),
+            category="tool",
+            summary="A test tool.",
+            domain="Dev Tools",
+            target_dir=Path("/tmp/test-tool"),
+            already_installed=True,
+        )
+        update_catalog(info, root=self.root)
+        result = find_duplicate_source("https://github.com/owner/test-tool", root=self.root)
+        self.assertEqual(result, "test-tool")
+
+    def test_find_duplicate_source_returns_none_for_unknown(self) -> None:
+        result = find_duplicate_source("https://github.com/unknown/repo", root=self.root)
+        self.assertIsNone(result)
 
 
 class repo:

@@ -4,7 +4,8 @@ import argparse
 import sys
 from pathlib import Path
 
-from .catalog import list_catalog, search_catalog
+from . import __version__
+from .catalog import find_duplicate_source, list_catalog, search_catalog
 from .classifier import classify_repo
 from .installer import install_source
 from .models import CATEGORY_LABELS, RepoInfo
@@ -19,6 +20,9 @@ def main(argv: list[str] | None = None) -> int:
             print_report(info)
             return 0
         if args.command == "install":
+            dupe = find_duplicate_source(args.source)
+            if dupe:
+                print(f"awesome: note: this source already exists in catalog as '{dupe}'")
             info = install_source(args.source, dry_run=args.dry_run, force=args.force)
             print_report(info)
             return 0
@@ -44,6 +48,7 @@ def main(argv: list[str] | None = None) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="awesome", description="Classify, install, and catalog GitHub repos.")
+    parser.add_argument("--version", action="version", version=f"awesome-catalogs v{__version__}")
     sub = parser.add_subparsers(dest="command")
 
     classify = sub.add_parser("classify", help="Classify a local repo path.")

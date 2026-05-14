@@ -2,7 +2,7 @@
 
 > Paste a GitHub link — auto-classify, extract a summary, install it, and update your catalog.
 
-![version](https://img.shields.io/badge/version-v1.1.0-green)
+![version](https://img.shields.io/badge/version-v1.1.1-green)
 ![categories](https://img.shields.io/badge/categories-5-blue)
 ![status](https://img.shields.io/badge/status-minimal%20stable-brightgreen)
 ![license](https://img.shields.io/badge/license-MIT-blue)
@@ -72,6 +72,7 @@ awesome install https://github.com/owner/repo
 - 📦 本地安装：复制 repo 到对应目标目录
 - 🗂️ catalog 更新：写入总目录和分类目录
 - 🔎 基础查询：支持 `list` 和 `search`
+- 🚫 重复检测：安装时自动提示 catalog 中已有的相同来源
 - 🧪 试运行：支持 `--dry-run`，先看判断结果再安装
 - 🧱 基础测试：覆盖 skill、plugin、script、tool、software、中文目录名和摘要清洗
 
@@ -79,6 +80,7 @@ awesome install https://github.com/owner/repo
 
 | 命令 | 状态 | 说明 |
 |---|---|---|
+| `awesome --version` | ✅ 已实现 | 显示当前版本号 |
 | `awesome install <url-or-path>` | ✅ 已实现 | 贴链接或本地路径 → 自动分类 → 安装 → 更新 catalog |
 | `awesome install <url-or-path> --dry-run` | ✅ 已实现 | 只预览分类和目标目录，不复制文件 |
 | `awesome install <url-or-path> --force` | ✅ 已实现 | 目标已存在时强制覆盖安装 |
