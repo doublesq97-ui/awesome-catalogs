@@ -1,9 +1,12 @@
 [project]
 name = "awesome-catalogs"
-version = "1.1.1"
+version = "1.2.0"
 description = "Classify GitHub repos, install them into Claude-friendly folders, and maintain Markdown catalogs."
 requires-python = ">=3.10"
 license = { text = "MIT" }
 
 [project.scripts]
 awesome = "awesome_catalogs.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["awesome_catalogs*"]

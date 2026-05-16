@@ -87,7 +87,7 @@ awesome install https://github.com/owner/repo
 | `awesome classify <local-path>` | ✅ 已实现 | 只分析本地 repo，不安装 |
 | `awesome list [category]` | ✅ 已实现 | 查看总目录或某个分类目录 |
 | `awesome search <keyword>` | ✅ 已实现 | 跨 catalog 搜索关键词 |
-| `awesome import-stars <username>` | 🗓️ 规划中 | 批量导入 GitHub Stars，并做去重、分页、限流处理 |
+| `awesome import-stars <username>` | ✅ 已实现 | 批量导入 GitHub Stars，按领域分组，自动推荐/已安装/跳过分类 |
 | `awesome remove <name>` | 🗓️ 规划中 | 移除已安装项目，并同步更新 catalog |
 
 ## 🧭 命令
@@ -108,6 +108,9 @@ awesome search agent
 | `awesome install <url-or-path> --force` | 覆盖已有安装目标 |
 | `awesome classify <local-path>` | 只分类本地 repo |
 | `awesome list [category]` | 查看总目录或某个分类目录 |
+| `awesome import-stars <username>` | 批量导入 GitHub Stars |
+| `awesome import-stars <username> --show-skipped` | 查看被跳过的 star 及原因 |
+| `awesome import-stars <username> --limit 50` | 限制处理数量 |
 | `awesome search <keyword>` | 跨 catalog 搜索关键词 |
 
 ## 🎬 示例：操作与反馈

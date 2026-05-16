@@ -9,6 +9,7 @@ from .catalog import find_duplicate_source, list_catalog, search_catalog
 from .classifier import classify_repo
 from .installer import install_source
 from .models import CATEGORY_LABELS, RepoInfo
+from .stars import run_stars_import
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -38,6 +39,14 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 print(f"No catalog entries matched: {args.keyword}")
             return 0
+        if args.command == "import-stars":
+            output = run_stars_import(
+                args.username,
+                limit=args.limit,
+                show_skipped=args.show_skipped,
+            )
+            print(output)
+            return 0
     except Exception as exc:
         print(f"awesome: error: {exc}", file=sys.stderr)
         return 1
@@ -64,6 +73,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     search = sub.add_parser("search", help="Search all catalogs.")
     search.add_argument("keyword")
+
+    stars = sub.add_parser("import-stars", help="Import and classify GitHub Stars.")
+    stars.add_argument("username")
+    stars.add_argument("--limit", type=int, help="Max repos to process.")
+    stars.add_argument("--show-skipped", action="store_true", help="Show skipped items in output.")
 
     return parser
 
