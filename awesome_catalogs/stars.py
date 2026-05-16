@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import json
 import subprocess
-import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
 from .catalog import find_duplicate_source
-from .classifier import assign_domain, extract_summary, safe_name
+from .classifier import assign_domain, extract_summary
 
 
 @dataclass
@@ -133,13 +132,6 @@ def decide_status(
     return "skip", "No description"
 
 
-STATUS_LABELS = {
-    "recommend": "recommended",
-    "installed": "installed",
-    "skip": "skipped",
-    "warn": "warning",
-}
-
 STATUS_CN = {
     "recommend": "推荐",
     "installed": "已安装",
@@ -149,7 +141,7 @@ STATUS_CN = {
 
 
 def format_stars_table(items: list[StarInfo]) -> str:
-    header = "| 状态 | 名称 | 简介 |\n|---|---|---|\n"
+    header = "| 状态 | 名称 | 简介 |\n| --- | --- | --- |\n"
     rows: list[str] = []
     for item in items:
         status_label = STATUS_CN.get(item.status, item.status)
@@ -158,7 +150,9 @@ def format_stars_table(items: list[StarInfo]) -> str:
         summary = item.readme_summary or item.description
         if len(summary) > 100:
             summary = summary[:99].rstrip() + "..."
-        rows.append(f"| {status_label} | {item.name} | {summary} |")
+        summary = summary.replace("|", "\\|").replace("\n", " ")
+        name = item.name.replace("|", "\\|")
+        rows.append(f"| {status_label} | {name} | {summary} |")
     return header + "\n".join(rows)
 
 
@@ -192,7 +186,7 @@ def run_stars_import(username: str, limit: int | None = None, show_skipped: bool
     lines.append(f"# Stars: {username}（{len(results)} 個 repos）")
     lines.append("")
     lines.append("| 狀態 | 數量 |")
-    lines.append("|---|---|")
+    lines.append("| --- | --- |")
     for status in ("recommend", "installed", "skip", "warn"):
         if counts.get(status):
             lines.append(f"| {STATUS_CN[status]} | {counts[status]} |")
