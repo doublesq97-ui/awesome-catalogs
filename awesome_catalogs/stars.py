@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 
 from .catalog import find_duplicate_source
-from .classifier import assign_domain, safe_name
+from .classifier import assign_domain, extract_summary, safe_name
 
 
 @dataclass
@@ -23,6 +23,7 @@ class StarInfo:
     status: str  # recommend | installed | skip | warn
     domain: str
     reason: str = ""
+    readme_summary: str = ""
 
 
 def fetch_stars(username: str) -> list[dict]:
@@ -35,6 +36,24 @@ def fetch_stars(username: str) -> list[dict]:
     return json.loads(result.stdout)
 
 
+def fetch_readme(full_name: str, default_branch: str = "main") -> str:
+    for branch in (default_branch, "main", "master"):
+        url = f"https://raw.githubusercontent.com/{full_name}/{branch}/README.md"
+        try:
+            result = subprocess.run(
+                ["curl", "-sL", "--max-time", "8", url],
+                capture_output=True, text=True,
+            )
+            if result.returncode == 0 and result.stdout.strip() and "404: Not Found" not in result.stdout:
+                content = result.stdout
+                if len(content) > 6000:
+                    content = content[:6000]
+                return content
+        except Exception:
+            pass
+    return ""
+
+
 def classify_star(repo: dict) -> StarInfo:
     name = repo["name"]
     full_name = repo["full_name"]
@@ -43,11 +62,20 @@ def classify_star(repo: dict) -> StarInfo:
     language = repo.get("language") or ""
     topics: list[str] = repo.get("topics") or []
     pushed_at = repo.get("pushed_at", "")
+    default_branch = repo.get("default_branch", "main")
 
     text = f"{description} {' '.join(topics)} {language} {name}"
     domain = assign_domain(text)
 
     status, reason = decide_status(full_name, html_url, description, topics, pushed_at)
+
+    readme_summary = ""
+    if status in ("recommend", "warn"):
+        readme = fetch_readme(full_name, default_branch=default_branch)
+        if readme:
+            readme_summary = extract_summary(readme, fallback=description)
+        if not readme_summary:
+            readme_summary = description
 
     return StarInfo(
         name=name,
@@ -61,14 +89,13 @@ def classify_star(repo: dict) -> StarInfo:
         status=status,
         domain=domain,
         reason=reason,
+        readme_summary=readme_summary,
     )
 
 
 def decide_status(
     full_name: str, html_url: str, description: str, topics: list[str], pushed_at: str
 ) -> tuple[str, str]:
-    owner = full_name.split("/")[0] if "/" in full_name else ""
-
     dupe = find_duplicate_source(html_url)
     if dupe:
         return "installed", f"已在 catalog: {dupe}"
@@ -76,7 +103,7 @@ def decide_status(
     lower_desc = description.lower()
     lower_topics = " ".join(topics).lower()
 
-    if any(kw in lower_topics for kw in ("awesome-list", "awesome-list")):
+    if any(kw in lower_topics for kw in ("awesome-list",)):
         return "skip", "Awesome list"
 
     edu_keywords = ("documentation", "tutorial", "cheatsheet", "docs", "course",
@@ -113,25 +140,25 @@ STATUS_LABELS = {
     "warn": "warning",
 }
 
-STATUS_EMOJI = {
-    "recommend": "RECOMMEND",
-    "installed": "INSTALLED",
-    "skip": "SKIP",
-    "warn": "WARN",
+STATUS_CN = {
+    "recommend": "推荐",
+    "installed": "已安装",
+    "skip": "跳过",
+    "warn": "警告",
 }
 
 
 def format_stars_table(items: list[StarInfo]) -> str:
-    header = "| Domain | Name | Repo | Summary | Status |\n|---|---|---|---|---|\n"
+    header = "| 状态 | 名称 | 简介 |\n|---|---|---|\n"
     rows: list[str] = []
     for item in items:
-        status_cell = STATUS_LABELS.get(item.status, item.status)
+        status_label = STATUS_CN.get(item.status, item.status)
         if item.reason:
-            status_cell += f" ({item.reason})"
-        rows.append(
-            f"| {item.domain} | {item.name} | {item.full_name} | "
-            f"{item.description[:80]} | {status_cell} |"
-        )
+            status_label += f"（{item.reason}）"
+        summary = item.readme_summary or item.description
+        if len(summary) > 100:
+            summary = summary[:99].rstrip() + "..."
+        rows.append(f"| {status_label} | {item.name} | {summary} |")
     return header + "\n".join(rows)
 
 
@@ -162,13 +189,13 @@ def run_stars_import(username: str, limit: int | None = None, show_skipped: bool
     by_domain = group_by_domain(results)
 
     lines: list[str] = []
-    lines.append(f"# Stars: {username} ({len(results)} repos)")
+    lines.append(f"# Stars: {username}（{len(results)} 個 repos）")
     lines.append("")
-    lines.append(f"| Status | Count |")
-    lines.append(f"|---|---|")
+    lines.append("| 狀態 | 數量 |")
+    lines.append("|---|---|")
     for status in ("recommend", "installed", "skip", "warn"):
         if counts.get(status):
-            lines.append(f"| {STATUS_LABELS[status]} | {counts[status]} |")
+            lines.append(f"| {STATUS_CN[status]} | {counts[status]} |")
     lines.append("")
 
     for domain, items in by_domain.items():

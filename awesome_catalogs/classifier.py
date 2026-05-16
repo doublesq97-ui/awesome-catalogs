@@ -99,7 +99,7 @@ def extract_summary(readme: str, fallback: str) -> str:
     lines = [line.strip() for line in cleaned.splitlines()]
     title: str | None = None
     for line in lines:
-        if not line or line.startswith("!") or line.startswith("[!"):
+        if not line or line.startswith(("!", "[!", "<h", "<a ", "<div", "<p ", "<img", "<br", "<table")):
             continue
         if line.startswith("#"):
             title = re.sub(r"^#+\s*", "", line).strip() or title
@@ -110,8 +110,15 @@ def extract_summary(readme: str, fallback: str) -> str:
         text = re.sub(r"<[^>]+>", "", text)
         text = re.sub(r"\*\*(.*?)\*\*", r"\1", text)
         text = re.sub(r"\s+", " ", text).strip()
-        if text:
-            return truncate(text, 120)
+        if not text:
+            continue
+        if re.match(r"^[a-zA-Z0-9._-]+\s*\|\s*", text):
+            continue
+        if re.match(r"^https?://", text):
+            continue
+        if len(text) < 15:
+            continue
+        return truncate(text, 120)
     return title or fallback
 
 
