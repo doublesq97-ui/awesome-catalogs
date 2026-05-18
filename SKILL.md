@@ -1,5 +1,5 @@
 ---
-name: awesome-claude-skills-manager
+name: awesome-catalogs
 description: Universal GitHub resource manager — paste a link, auto-classify into Skill/Tool/Script/Plugin/Software, one-click install, maintain searchable catalogs. Also imports GitHub Stars and organizes them by domain tags.
 ---
 
@@ -15,6 +15,8 @@ When the user gives a GitHub link, wants to manage their local tools/skills, or 
 4. **Star import** — Batch-scan GitHub Stars, classify and recommend
 5. **Smart summary** — Extract a one-line description from each repo's README
 6. **Natural language** — User can operate in plain language: drop a link, ask "what skills do I have?", etc.
+7. **Activity tracking** — Record install time + last-used time per item. Track usage across sessions via `activity.json`. Human model can't do this; persistence IS the skill's value-add.
+8. **Cleanup assistant** — Detect low-score items (0–1 stars), offer batch cleanup with human review. All catalog views show ★☆☆☆☆ 5-point activity score.
 
 ## Classification Engine
 
@@ -38,7 +40,7 @@ See [references/classifier.md](references/classifier.md) for detailed detection 
 4. Extract one-line summary from README
 5. Assign a broad domain tag (see Domain Tags below)
 6. Install to the appropriate directory
-7. Update the corresponding catalog file under `~/.claude/awesome-catalogs/`
+7. Update the corresponding catalog file AND write/update entry in `activity.json` with `installed_at` set to now, `last_used_at` null, `times_used` 0
 8. Report: what was installed, where, its summary, and its domain tag
 9. Clean up `/tmp/awesome-import/`
 
@@ -86,6 +88,94 @@ Assign one broad domain tag per item:
 | 🔮 Esoteric | Bazi, astrology, divination |
 | 🧩 Other | Uncategorized |
 
+## Activity Tracking
+
+Each installed item is tracked in `~/.claude/awesome-catalogs/activity.json`:
+
+```json
+{
+  "items": {
+    "<name>": {
+      "type": "skill|tool|script|plugin|software",
+      "name": "Display Name",
+      "repo": "github.com/owner/repo",
+      "domain": "🤖 AI/Automation",
+      "installed_at": "ISO timestamp",
+      "last_used_at": "ISO timestamp or null",
+      "times_used": 0
+    }
+  },
+  "last_cleanup_check": "ISO timestamp or null"
+}
+```
+
+### Activity Score (5-Point → 10-Block Bar)
+
+Computed at display time from `last_used_at` vs current date:
+
+| Score | Progress Bar | Rule |
+|:-----:|--------------|------|
+| 5 | `[██████████]` | Used within 7 days |
+| 4 | `[████████░░]` | Used within 14 days |
+| 3 | `[██████░░░░]` | Used within 30 days |
+| 2 | `[████░░░░░░]` | Used within 60 days |
+| 1 | `[██░░░░░░░░]` | Used 60+ days ago |
+| 0 | `[░░░░░░░░░░]` | Never used since install |
+
+### When to Record Activity
+
+- **Install**: Write `installed_at` immediately after successful install. Set `last_used_at` to null, `times_used` to 0.
+- **Use**: When you see a skill invoked via the Skill tool in conversation, update its `last_used_at` and increment `times_used` in `activity.json`. When user explicitly says "我用了 X" or "刚用了 X", do the same.
+- **List/Display**: Before displaying any catalog, ALWAYS read `activity.json`, compute star scores, and show them alongside each item. Do NOT display catalog without activity scores.
+- **Self-track**: When `awesome-catalogs` itself is invoked, record its own usage.
+
+### Updating Activity on Display
+
+When user says "查看目录" / "show catalog" / "看看我的 skill" etc., read `activity.json` first, compute the star score for each item, then display entries with the score column. Format:
+
+```
+| Domain | Name | Repo | Summary | Score | Status |
+|------|------|------|------|:--:|:--:|
+| 🤖 AI | n8n-io/n8n | github.com/n8n-io/n8n | Workflow automation | [██████████] | 📦 |
+| 🎨 Design | something | github.com/x/y | Design tool | [░░░░░░░░░░] | 📦 |
+```
+
+Sort 0-score ([░░░░░░░░░░]) items to the bottom so the user sees active items first.
+
+## Cleanup Workflow
+
+When user says "清理" / "cleanup" / "有什么没用的" / "what's unused" / "僵尸 skill" / "zombie skills":
+
+1. Read `activity.json`
+2. List all items with score 1 or below (last used >60 days ago, or never used)
+3. Sort by score ascending (0 first), then by install date (oldest first)
+4. Present as a table:
+
+```
+发现 N 个低活跃项目（60天+未使用或从未使用）：
+
+| # | Name | Domain | Score | Installed | Last Used | Type |
+|---|------|--------|:-----:|-----------|-----------|------|
+| 1 | skill-a | 🎨 Design | [░░░░░░░░░░] | 2026-04-01 | never | skill |
+| 2 | tool-b | 🤖 AI   | [██░░░░░░░░] | 2026-04-15 | 2026-04-16 (33d) | tool |
+```
+
+5. Ask: "要清理哪些？输入编号（如 1,3,5）、'all'、或 'cancel'"
+6. For each item the user selects to remove:
+   - Delete from its install directory (`~/.claude/skills/<name>/`, `~/.claude/tools/<name>/`, etc.)
+   - Remove its line from the corresponding catalog file under `~/.claude/awesome-catalogs/`
+   - Remove its entry from `activity.json`
+   - Report: "✅ 已移除 skill-a — 释放 XX KB"
+7. Update `last_cleanup_check` timestamp in `activity.json`
+
+### Cleanup Safety Rules
+
+- NEVER auto-delete without user confirmation
+- Show exactly what will be deleted (name, path, size) before acting
+- User MUST explicitly approve via number list or "all"
+- If user says "cancel" / "不用" / "算了", stop immediately with no changes
+- Skip items that have been used in the CURRENT conversation (even if their score would otherwise be 0–1)
+
 ## Catalog System
 
 Maintain catalogs under `~/.claude/awesome-catalogs/`:
@@ -102,9 +192,9 @@ Maintain catalogs under `~/.claude/awesome-catalogs/`:
 
 Each catalog entry format:
 ```
-| Domain | Name | Repo | Summary | Status |
-|------|------|------|------|------|
-| 🤖 AI | n8n-io/n8n | github.com/n8n-io/n8n | Workflow automation | 📦 Installed |
+| Domain | Name | Repo | Summary | Activity | Status |
+|------|------|------|------|:--:|:--:|
+| 🤖 AI | n8n-io/n8n | github.com/n8n-io/n8n | Workflow automation | [██████████] | 📦 |
 ```
 
 When user says "查看目录" / "show catalog" → display CATALOG.md
@@ -120,6 +210,8 @@ When user says "查看 skill" / "show skills" → display SKILLS_CATALOG.md
 | "搜索 <keyword>" / "search <keyword>" | Cross-category search |
 | "我还有哪些 star 没装" / "check uninstalled stars" | Star import workflow |
 | "展开跳过" / "show skipped" | Reveal skipped items from last star scan |
+| "清理无用 skill" / "cleanup" / "有什么没用的" / "僵尸" | Run cleanup workflow — scan zombies, offer batch removal |
+| "最近用了什么" / "what's active" / "activity" | Show all items sorted by last-used time (most recent first) |
 | "I'm making <type> content, load relevant skill" | Find and activate matching skills |
 
 ## CLI Commands
@@ -130,4 +222,6 @@ When user says "查看 skill" / "show skills" → display SKILLS_CATALOG.md
 | `awesome list <category>` | Browse any category catalog |
 | `awesome search "keyword"` | Search across all categories |
 | `awesome import-stars <user>` | Batch-import GitHub Stars |
+| `awesome cleanup` | Scan for zombie items, offer batch removal |
+| `awesome activity` | Show all items sorted by last-used time |
 | `awesome remove <name>` | Remove an installed item |
