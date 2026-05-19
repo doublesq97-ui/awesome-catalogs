@@ -8,6 +8,7 @@ from pathlib import Path
 from .catalog import update_catalog
 from .classifier import classify_repo
 from .models import RepoInfo
+from .activity import record_install
 
 
 def install_source(source: str, dry_run: bool = False, force: bool = False) -> RepoInfo:
@@ -18,6 +19,7 @@ def install_source(source: str, dry_run: bool = False, force: bool = False) -> R
             return info
         install_repo(info, force=force)
         update_catalog(info)
+        record_install(info.name, info.source, info.domain, info.category)
         return classify_repo(info.target_dir, source=source)
 
 

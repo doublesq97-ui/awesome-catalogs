@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 from . import __version__
+from .activity import record_usage, run_cleanup
 from .catalog import find_duplicate_source, list_catalog, search_catalog
 from .classifier import classify_repo
 from .installer import install_source
@@ -47,6 +48,16 @@ def main(argv: list[str] | None = None) -> int:
             )
             print(output)
             return 0
+        if args.command == "cleanup":
+            print(run_cleanup(force=args.force))
+            return 0
+        if args.command == "record-usage":
+            result = record_usage(args.name)
+            if result:
+                print(f"Recorded usage for '{args.name}' (used {result['times_used']} times)")
+            else:
+                print(f"awesome: note: '{args.name}' not found in activity.json")
+            return 0
     except Exception as exc:
         print(f"awesome: error: {exc}", file=sys.stderr)
         return 1
@@ -78,6 +89,12 @@ def build_parser() -> argparse.ArgumentParser:
     stars.add_argument("username")
     stars.add_argument("--limit", type=int, help="Max repos to process.")
     stars.add_argument("--show-skipped", action="store_true", help="Show skipped items in output.")
+
+    cleanup = sub.add_parser("cleanup", help="Scan and remove zombie items (score 0-1).")
+    cleanup.add_argument("--force", action="store_true", help="Actually delete zombie items.")
+
+    record = sub.add_parser("record-usage", help="Record a usage event for an item.")
+    record.add_argument("name", help="Name of the skill/tool/script.")
 
     return parser
 

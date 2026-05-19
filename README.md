@@ -2,7 +2,7 @@
 
 > Paste a GitHub link — auto-classify, extract a summary, install it, and update your catalog.
 
-![version](https://img.shields.io/badge/version-v1.1.1-green)
+![version](https://img.shields.io/badge/version-v1.3.0-green)
 ![categories](https://img.shields.io/badge/categories-5-blue)
 ![status](https://img.shields.io/badge/status-minimal%20stable-brightgreen)
 ![license](https://img.shields.io/badge/license-MIT-blue)
@@ -89,6 +89,8 @@ awesome install https://github.com/owner/repo
 | `awesome search <keyword>` | ✅ 已实现 | 跨 catalog 搜索关键词 |
 | `awesome import-stars <username>` | ✅ 已实现 | 批量导入 GitHub Stars，按领域分组，自动推荐/已安装/跳过分类 |
 | `awesome remove <name>` | 🗓️ 规划中 | 移除已安装项目，并同步更新 catalog |
+| `awesome cleanup` | ✅ 已实现 | 扫描僵尸项目（score 0-1），确认后批量删除 |
+| `awesome record-usage <name>` | ✅ 已实现 | 记录 skill/tool 使用次数与最后使用时间 |
 
 ## 🧭 命令
 
@@ -112,6 +114,9 @@ awesome search agent
 | `awesome import-stars <username> --show-skipped` | 查看被跳过的 star 及原因 |
 | `awesome import-stars <username> --limit 50` | 限制处理数量 |
 | `awesome search <keyword>` | 跨 catalog 搜索关键词 |
+| `awesome cleanup` | 扫描并清理僵尸项目 |
+| `awesome cleanup --force` | 确认后直接删除僵尸项目 |
+| `awesome record-usage <name>` | 记录一次使用 |
 
 ## 🎬 示例：操作与反馈
 
