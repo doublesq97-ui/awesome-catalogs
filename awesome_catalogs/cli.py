@@ -8,6 +8,7 @@ from . import __version__
 from .activity import record_usage, run_cleanup
 from .catalog import find_duplicate_source, list_catalog, search_catalog
 from .classifier import classify_repo
+from .evaluate import run_evaluate
 from .installer import install_source
 from .models import CATEGORY_LABELS, RepoInfo
 from .stars import run_stars_import
@@ -58,6 +59,9 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 print(f"awesome: note: '{args.name}' not found in activity.json")
             return 0
+        if args.command == "evaluate":
+            print(run_evaluate(args.url))
+            return 0
     except Exception as exc:
         print(f"awesome: error: {exc}", file=sys.stderr)
         return 1
@@ -95,6 +99,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     record = sub.add_parser("record-usage", help="Record a usage event for an item.")
     record.add_argument("name", help="Name of the skill/tool/script.")
+
+    evaluate = sub.add_parser("evaluate", help="Evaluate a GitHub repo before installing.")
+    evaluate.add_argument("url", help="GitHub repo URL to evaluate.")
 
     return parser
 
