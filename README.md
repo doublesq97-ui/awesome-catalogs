@@ -2,7 +2,7 @@
 
 > Paste a GitHub link — auto-classify, extract a summary, install it, and update your catalog.
 
-![version](https://img.shields.io/badge/version-v1.3.0-green)
+![version](https://img.shields.io/badge/version-v1.4.0-green)
 ![categories](https://img.shields.io/badge/categories-5-blue)
 ![status](https://img.shields.io/badge/status-minimal%20stable-brightgreen)
 ![license](https://img.shields.io/badge/license-MIT-blue)
@@ -82,13 +82,20 @@ awesome install https://github.com/owner/repo
 - 🌟 Stars 导入：`import-stars` 批量导入 + 按领域分组 + 推荐/跳过分类
 - 🧱 基础测试：22 个测试覆盖分类、决策、摘要清洗
 
-### v1.3.0（使用追踪 + 僵尸清理）🆕
+### v1.3.0（使用追踪 + 僵尸清理）
 
 - 📊 安装追踪：`awesome install` 自动写入 `activity.json`（安装时间、类型、来源）
 - 🔢 使用计数：`awesome record-usage <name>` 记录使用次数和最后使用时间
 - ⭐ 5 分制评分：距上次使用 ≤7 天 = █████，>365 天 = █░░░░，从未使用 = ░░░░░
 - 🧹 僵尸扫描：`awesome cleanup` 列出所有 score ≤1 的项目
 - 🗑️ 批量清理：`awesome cleanup --force` 确认后删除 + 同步更新 catalog + activity.json
+
+### v1.4.0（装前评估）🆕
+
+- 🔬 7 维评估：热度、活跃度、社区健康、版本稳定性、安装成本、重叠度、场景匹配
+- 🔗 实时 GitHub API：拉取 stars、forks、最近 push、open issues、release 版本
+- 🔄 交叉对比：结合 `activity.json` 分析重叠度和使用场景匹配
+- 💡 三级建议：🟢 推荐安装 / 🟡 观望 / 🔴 不建议
 
 ### 当前命令状态
 
@@ -105,6 +112,7 @@ awesome install https://github.com/owner/repo
 | `awesome cleanup` | ✅ 已实现 | 扫描僵尸项目（score ≤1），列出清单 |
 | `awesome cleanup --force` | ✅ 已实现 | 确认后批量删除 + 同步清理 catalog 和 activity.json |
 | `awesome record-usage <name>` | ✅ 已实现 | 手动记录一次使用（通常由 Claude Code 自动调用） |
+| `awesome evaluate <url>` | ✅ 已实现 | 装前 7 维评估：热度/活跃度/健康/稳定性/安装成本/重叠度/场景匹配 |
 
 ## 🧭 命令速查
 
@@ -147,6 +155,7 @@ awesome record-usage <name>
 | `awesome cleanup` | 扫描僵尸项目（score ≤1），预览清单 |
 | `awesome cleanup --force` | 确认后批量删除僵尸项目 |
 | `awesome record-usage <name>` | 记录一次使用（+1 次数，更新最后使用时间） |
+| `awesome evaluate <url>` | 装前 7 维评估，输出评估表格和建议 |
 
 ## 🎬 示例
 
@@ -196,6 +205,32 @@ awesome search automation
 | Domain | Name | Repo | Summary | Status |
 |---|---|---|---|---|
 | Dev Tools | useful-cli | github.com/owner/useful-cli | A command-line utility for everyday automation. | installed |
+```
+
+### 示例 4：装前评估 (v1.4.0)
+
+```bash
+awesome evaluate https://github.com/n8n-io/n8n
+```
+
+输出：
+
+```text
+## n8n 评估
+
+> Fair-code workflow automation platform with native AI capabilities.
+
+| 维度 | 评估 |
+|------|------|
+| 热度 | 🟢 ⭐ 188,641 stars · 57,802 forks |
+| 活跃度 | 🟢 0d since last push · active |
+| 社区健康 | 🔴 1468 open issues · may be under-maintained |
+| 版本稳定性 | 🟢 stable · stable release |
+| 安装成本 | 🟡 Medium — Docker |
+| 重叠度 | 🔴 8 related: claude-code-sub-agents ░░░░░, n8n-code-javascript ░░░░░... |
+| 场景匹配 | 🔴 15 tools in same domain, all ░░░░░ — likely low priority |
+
+建议：🔴 不建议 — 多项指标不理想，建议观望或寻找替代品
 ```
 
 ## 🧠 分类规则
@@ -279,20 +314,20 @@ python3 -m unittest discover -s tests
 |-------|------|------|
 | 核心闭环 | 分类、安装、catalog、搜索、Stars 导入 | ✅ v1.2.0 |
 | 使用追踪 | activity.json、5 分制评分、僵尸扫描清理 | ✅ v1.3.0 |
+| 装前评估 | GitHub API 拉取 stars/活跃度/版本 → 7 维评估 | ✅ v1.4.0 |
 
 ### 待规划
 
 | Phase | 内容 | 依赖 |
 |-------|------|------|
-| 装前评估 | GitHub API 拉取 stars/活跃度/版本 → 7 维评估 → "值得装吗" | Phase 0 |
-| 重叠检测 | 新工具 vs 已安装工具功能对比 → 重合度报告 | Phase 1 |
+| 重叠检测 | 新工具 vs 已安装工具功能语义对比 → 重合度报告 | Phase 1 |
 | 反推荐 + 智能推荐 | "你已有 3 个设计类 skill 且均未使用，确定要装第 4 个？" | Phase 2 |
 | 定期健康检查 | 30 天未清理提醒 / 90 天僵尸预警 / 死链检测 | Phase 3 |
 
 ```
 Phase 0: 使用追踪         [██████████] ✅ v1.3.0
-Phase 1: 装前评估         [████████░░] 下一期
-Phase 2: 重叠检测         [██████░░░░] 依赖 Phase 1
+Phase 1: 装前评估         [██████████] ✅ v1.4.0
+Phase 2: 重叠检测         [██████░░░░] 下一期
 Phase 3: 反推荐+智能推荐  [████░░░░░░] 依赖 Phase 2
 Phase 4: 定期健康检查     [██░░░░░░░░] 锦上添花
 ```
